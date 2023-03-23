@@ -8,7 +8,6 @@ import (
 )
 
 var _ MessageHandlerInterface = (*GroupMessageHandler)(nil)
-
 // GroupMessageHandler 群消息处理
 type GroupMessageHandler struct {
 }
@@ -41,7 +40,11 @@ func (g *GroupMessageHandler) ReplyText(msg *openwechat.Message) error {
 	// 替换掉@文本，然后向GPT发起请求
 	replaceText := "@" + sender.Self.NickName
 	requestText := strings.TrimSpace(strings.ReplaceAll(msg.Content, replaceText, ""))
-	reply, err := gtp.Completions(requestText)
+	
+	reply, err := gtp.Completions([]gtp.Message{
+      {Role: "user",
+      Content: requestText},
+  })
 	if err != nil {
 		log.Printf("gtp request error: %v \n", err)
 		msg.ReplyText("机器人神了，我一会发现了就去修。")
