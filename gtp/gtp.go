@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-const BASEURL = "https://api.openai.com/v1/"
+const BASEURL = "https://api.openai.com/v1/chat/"
 
 // ChatGPTResponseBody 请求体
 type ChatGPTResponseBody struct {
@@ -17,7 +17,15 @@ type ChatGPTResponseBody struct {
 	Object  string                   `json:"object"`
 	Created int                      `json:"created"`
 	Model   string                   `json:"model"`
-	Choices []map[string]interface{} `json:"choices"`
+	//Choices []map[string]interface{} `json:"choices"`
+	Choices []struct {
+		Message struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		} `json:"message"`
+		FinishReason string `json:"finish_reason"`
+		Index        int    `json:"index"`
+	} `json:"choices"`
 	Usage   map[string]interface{}   `json:"usage"`
 }
 
@@ -27,12 +35,14 @@ type ChoiceItem struct {
 // ChatGPTRequestBody 响应体
 type ChatGPTRequestBody struct {
 	Model            string  `json:"model"`
-	Prompt           string  `json:"prompt"`
-	MaxTokens        int     `json:"max_tokens"`
+	Messages       []Message `json:"messages"`
 	Temperature      float32 `json:"temperature"`
-	TopP             int     `json:"top_p"`
-	FrequencyPenalty int     `json:"frequency_penalty"`
-	PresencePenalty  int     `json:"presence_penalty"`
+	
+}
+
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
 // Completions gtp文本模型回复
@@ -40,15 +50,11 @@ type ChatGPTRequestBody struct {
 //-H "Content-Type: application/json"
 //-H "Authorization: Bearer your chatGPT key"
 //-d '{"model": "text-davinci-003", "prompt": "give me good song", "temperature": 0, "max_tokens": 7}'
-func Completions(msg string) (string, error) {
+func Completions(msg []Message) (string, error) {
 	requestBody := ChatGPTRequestBody{
-		Model:            "text-davinci-003",
-		Prompt:           msg,
-		MaxTokens:        2048,
+		Model:            "gpt-3.5-turbo",
+		Messages:         msg,
 		Temperature:      0.7,
-		TopP:             1,
-		FrequencyPenalty: 0,
-		PresencePenalty:  0,
 	}
 	requestData, err := json.Marshal(requestBody)
 
@@ -85,7 +91,7 @@ func Completions(msg string) (string, error) {
 	var reply string
 	if len(gptResponseBody.Choices) > 0 {
 		for _, v := range gptResponseBody.Choices {
-			reply = v["text"].(string)
+			reply = v.Message.Content
 			break
 		}
 	}
