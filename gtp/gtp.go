@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-const BASEURL = "https://api.openai.com/v1/chat/"
+const BASEURL = "https://api.openai.com/v1/"
 
 // ChatGPTResponseBody 请求体
 type ChatGPTResponseBody struct {
@@ -17,14 +17,10 @@ type ChatGPTResponseBody struct {
 	Object  string                   `json:"object"`
 	Created int                      `json:"created"`
 	Model   string                   `json:"model"`
-	//Choices []map[string]interface{} `json:"choices"`
 	Choices []struct {
-		Message struct {
-			Role    string `json:"role"`
-			Content string `json:"content"`
-		} `json:"message"`
-		FinishReason string `json:"finish_reason"`
-		Index        int    `json:"index"`
+		Message      Message           `json:"message"`
+		FinishReason string            `json:"finish_reason"`
+		Index        int               `json:"index"`
 	} `json:"choices"`
 	Usage   map[string]interface{}   `json:"usage"`
 }
@@ -49,7 +45,11 @@ type Message struct {
 //curl https://api.openai.com/v1/completions
 //-H "Content-Type: application/json"
 //-H "Authorization: Bearer your chatGPT key"
-//-d '{"model": "text-davinci-003", "prompt": "give me good song", "temperature": 0, "max_tokens": 7}'
+//-d '{
+//     "model": "gpt-3.5-turbo",
+//     "messages": [{"role": "user", "content": "Say this is a test!"}],
+//     "temperature": 0.7
+//   }'
 func Completions(msg []Message) (string, error) {
 	requestBody := ChatGPTRequestBody{
 		Model:            "gpt-3.5-turbo",
@@ -91,8 +91,10 @@ func Completions(msg []Message) (string, error) {
 	var reply string
 	if len(gptResponseBody.Choices) > 0 {
 		for _, v := range gptResponseBody.Choices {
-			reply = v.Message.Content
-			break
+		  if v.Message.Role == "assistant" {
+    		reply = v.Message.Content
+    		break
+		  }
 		}
 	}
 	log.Printf("gpt response text: %s \n", reply)
